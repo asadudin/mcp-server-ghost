@@ -96,6 +96,19 @@ async def make_ghost_request(endpoint: str, method: str = "GET", data: Optional[
         except Exception as e:
             return {"error": str(e)}
 
+import re
+
+def strip_html_tags(html: str) -> str:
+    """Remove HTML tags from a string for plain text extraction."""
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', html)
+
+def truncate_text(text: str, length: int) -> str:
+    """Truncate text to a specified length, adding ellipsis if needed."""
+    if len(text) <= length:
+        return text
+    return text[:length].rsplit(' ', 1)[0] + '...'
+
 @mcp.tool()
 async def create_post(title: str, content: str, status: str = "draft", tags: Optional[List[str]] = None) -> str:
     """Create a new post in Ghost.
@@ -106,12 +119,27 @@ async def create_post(title: str, content: str, status: str = "draft", tags: Opt
         status: Post status (draft, published, scheduled)
         tags: Optional list of tags to associate with the post
     """
+    # Generate SEO fields
+    plain_text = strip_html_tags(content)
+    meta_title = title
+    meta_description = truncate_text(plain_text, 150)
+    og_title = title
+    og_description = meta_description
+    twitter_title = title
+    twitter_description = meta_description
+
     # Prepare the post data
     post_data = {
         "posts": [{
             "title": title,
             "html": content,
-            "status": status
+            "status": status,
+            "meta_title": meta_title,
+            "meta_description": meta_description,
+            "og_title": og_title,
+            "og_description": og_description,
+            "twitter_title": twitter_title,
+            "twitter_description": twitter_description
         }]
     }
     
@@ -275,13 +303,30 @@ async def edit_post(post_id: str, title: Optional[str] = None, content: Optional
         post = current_post["posts"][0]
         
         # Prepare the updated post data
+        # Generate SEO fields
+        updated_title = title if title is not None else post["title"]
+        updated_content = content if content is not None else post["html"]
+        plain_text = strip_html_tags(updated_content)
+        meta_title = updated_title
+        meta_description = truncate_text(plain_text, 150)
+        og_title = updated_title
+        og_description = meta_description
+        twitter_title = updated_title
+        twitter_description = meta_description
+
         post_data = {
             "posts": [{
                 "id": post_id,
-                "title": title if title is not None else post["title"],
-                "html": content if content is not None else post["html"],
+                "title": updated_title,
+                "html": updated_content,
                 "status": status if status is not None else post["status"],
-                "updated_at": post["updated_at"]  # Required for version control
+                "updated_at": post["updated_at"],  # Required for version control
+                "meta_title": meta_title,
+                "meta_description": meta_description,
+                "og_title": og_title,
+                "og_description": og_description,
+                "twitter_title": twitter_title,
+                "twitter_description": twitter_description
             }]
         }
         

@@ -1,0 +1,11 @@
+services:
+  ghost:
+    build: .
+    ports:
+      - "8053:8053"
+    volumes:
+      - ./ghost_data:/var/lib/ghost/content
+        #environment:
+      # Example environment variables, adjust as needed
+      # NODE_ENV: production
+      # url: http://localhost:2368
